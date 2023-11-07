@@ -17,12 +17,11 @@ local allowedClasses = {
 
 local cvarFlags = bit.bor( FCVAR_ARCHIVE, FCVAR_NOTIFY )
 for className, default in pairs( allowedClasses ) do
-    local conVar = CreateConVar( "mp_allow_flight_on_" .. className, default and "1" or "0", cvarFlags, "", 0, 1 )
+    local conVar = CreateConVar( "mp_allow_flight_on_" .. className, default and "1" or "0", cvarFlags, "Allows players to fly on '" .. className .. "'.", 0, 1 )
     allowedClasses[ className ] = conVar:GetBool()
-
     cvars.AddChangeCallback( conVar:GetName(), function( _, __, value )
         allowedClasses[ className ] = tobool( value )
-    end )
+    end, addonName )
 end
 
 hook.Add( "OnEntityCreated", addonName, function( entity )
