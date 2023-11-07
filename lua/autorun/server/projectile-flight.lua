@@ -24,6 +24,9 @@ for className, default in pairs( allowedClasses ) do
     end, addonName )
 end
 
+local MOVETYPE_WALK = MOVETYPE_WALK
+local MOVETYPE_NONE = MOVETYPE_NONE
+
 hook.Add( "OnEntityCreated", addonName, function( entity )
     if not allowedClasses[ entity:GetClass() ] then return end
 
@@ -38,8 +41,6 @@ hook.Add( "OnEntityCreated", addonName, function( entity )
         ply[ addonName ] = entity
     end )
 end )
-
-local MOVETYPE_NONE = MOVETYPE_NONE
 
 hook.Add( "Move", addonName, function( ply, mv )
     local entity = ply[ addonName ]
@@ -57,7 +58,6 @@ hook.Add( "Move", addonName, function( ply, mv )
         return
     end
 
-    local pos = entity:LocalToWorld( entity:OBBCenter() )
     local mins, maxs
     if mv:KeyDown( IN_DUCK ) then
         mins, maxs = ply:GetHullDuck()
@@ -76,6 +76,7 @@ hook.Add( "Move", addonName, function( ply, mv )
     local tickInterval = engine_TickInterval()
     velocity = velocity * tickInterval / 2
 
+    local pos = entity:LocalToWorld( entity:OBBCenter() )
     if util_TraceHull( { start = pos, endpos = pos - velocity, filter = filter, mins = mins, maxs = maxs } ).Hit then
         ply[ addonName ] = nil
         return
