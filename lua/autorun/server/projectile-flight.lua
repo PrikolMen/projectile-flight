@@ -55,6 +55,10 @@ hook.Add( "OnEntityCreated", addonName, function( entity )
         if not ply:IsPlayer() then return end
         if ply:GetMoveType() ~= MOVETYPE_WALK then return end
 
+        if ply:GetInfo( "cl_projectile_flight_automatic" ) == "1" then
+            if ply:KeyDown( IN_WALK ) then return end
+        elseif not ply:KeyDown( IN_WALK ) then return end
+
         ply[ addonName ] = entity
     end )
 end )
