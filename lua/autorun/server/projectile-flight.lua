@@ -15,6 +15,23 @@ local allowedClasses = {
     ["grenade_ar2"] = false
 }
 
+do
+
+    local fileName = string.gsub( string.lower( addonName ), "[%p%s%c]+", "_" ) .. ".json"
+    if file.Exists( fileName, "DATA" ) then
+        local json = file.Read( fileName, "DATA" )
+        if isstring( json ) then
+            local tbl = util.JSONToTable( json )
+            if istable( tbl ) then
+                table.Merge( allowedClasses, tbl )
+            end
+        end
+    else
+        file.Write( fileName, util.TableToJSON( allowedClasses, true ) )
+    end
+
+end
+
 local cvarFlags = bit.bor( FCVAR_ARCHIVE, FCVAR_NOTIFY )
 for className, default in pairs( allowedClasses ) do
     local conVar = CreateConVar( "mp_allow_flight_on_" .. className, default and "1" or "0", cvarFlags, "Allows players to fly on '" .. className .. "'.", 0, 1 )
