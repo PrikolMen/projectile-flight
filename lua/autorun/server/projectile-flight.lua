@@ -3,7 +3,6 @@ local physenv_GetGravity = physenv.GetGravity
 local util_TraceHull = util.TraceHull
 local timer_Simple = timer.Simple
 local math_max = math.max
-local IsValid = IsValid
 
 local addonName = "Projectile Flight"
 local allowedClasses = {
@@ -51,7 +50,7 @@ hook.Add( "OnEntityCreated", addonName, function( entity )
         if not entity:IsValid() then return end
 
         local ply = entity:GetOwner()
-        if not IsValid( ply ) then return end
+        if not ply or not ply:IsValid() then return end
         if not ply:IsPlayer() then return end
         if ply:GetMoveType() ~= MOVETYPE_WALK then return end
 
