@@ -67,13 +67,13 @@ hook.Add( "Move", addonName, function( ply, mv )
     local entity = ply[ addonName ]
     if not entity then return end
 
-    if not entity:IsValid() or not ply:Alive() or ply:GetMoveType() ~= MOVETYPE_WALK or entity:GetMoveType() == MOVETYPE_NONE then
+    if not entity:IsValid() or entity:GetMoveType() == MOVETYPE_NONE then
         ply[ addonName ] = nil
         return
     end
 
     local velocity = entity:GetVelocity()
-    if mv:KeyDown( IN_JUMP ) then
+    if mv:KeyDown( IN_JUMP ) or not ply:Alive() or ply:GetMoveType() ~= MOVETYPE_WALK then
         mv:SetVelocity( velocity )
         ply[ addonName ] = nil
         return
