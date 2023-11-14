@@ -78,13 +78,7 @@ hook.Add( "Move", addonName, function( ply, mv )
         return
     end
 
-    local mins, maxs
-    if mv:KeyDown( IN_DUCK ) then
-        mins, maxs = ply:GetHullDuck()
-    else
-        mins, maxs = ply:GetHull()
-    end
-
+    local mins, maxs = ply:GetCollisionBounds()
     mins[ 3 ] = maxs[ 3 ] / 2
 
     local filter = entity[ addonName ]
