@@ -88,7 +88,7 @@ hook.Add "Move", AddonName, ( mv ) =>
     halfTickInterval = engine_TickInterval! * 0.5
     velocity = velocity * halfTickInterval
 
-    start = entity\LocalToWorld( entity\OBBCenter! )
+    start = entity\WorldSpaceCenter!
     if util_TraceHull( { :start, endpos: start - velocity, :filter, :mins, :maxs } ).Hit then
         @[ AddonName ] = nil
         return
