@@ -1,0 +1,97 @@
+engine_TickInterval = engine.TickInterval
+physenv_GetGravity = physenv.GetGravity
+util_TraceHull = util.TraceHull
+timer_Simple = timer.Simple
+math_max = math.max
+
+AddonName = "Projectile Flight"
+AllowedClasses = {
+    npc_grenade_bugbait: true
+    prop_combine_ball: false
+    npc_grenade_frag: false
+    crossbow_bolt: true
+    grenade_ar2: false
+    rpg_missile: true
+}
+
+do
+
+    fileName = string.gsub( string.lower( AddonName ), "[%p%s%c]+", "_" ) .. ".json"
+    if file.Exists( fileName, "DATA" )
+        json = file.Read( fileName, "DATA" )
+        if isstring( json )
+            tbl = util.JSONToTable( json )
+            if istable( tbl )
+                table.Merge( AllowedClasses, tbl )
+    else
+        file.Write( fileName, util.TableToJSON( AllowedClasses, true ) )
+
+do
+
+    Flags = bit.bor( FCVAR_ARCHIVE, FCVAR_NOTIFY )
+    for className, default in pairs( AllowedClasses )
+        ConVar = CreateConVar( "mp_allow_flight_on_" .. className, default and "1" or "0", Flags, "Allows players to fly on '" .. className .. "'.", 0, 1 )
+        AllowedClasses[ className ] = ConVar\GetBool!
+
+        cvars.AddChangeCallback( ConVar\GetName!, ( _, __, value ) ->
+            AllowedClasses[ className ] = tobool( value )
+        AddonName )
+
+MOVETYPE_WALK = MOVETYPE_WALK
+
+hook.Add( "OnEntityCreated", AddonName, =>
+    unless AllowedClasses[ @GetClass! ]
+        return
+
+    timer_Simple 0, ->
+        unless @IsValid!
+            return
+
+        owner = @GetOwner!
+        unless owner\IsValid! and owner\IsPlayer! and owner\GetMoveType! == MOVETYPE_WALK
+            return
+
+        if owner\GetInfo( "cl_projectile_flight_automatic" ) == "1"
+            if owner\KeyDown( IN_WALK )
+                return
+        elseif not owner\KeyDown( IN_WALK )
+            return
+
+        owner[ AddonName ] = @
+)
+
+MOVETYPE_NONE = MOVETYPE_NONE
+
+hook.Add "Move", AddonName, ( mv ) =>
+    entity = @[ AddonName ]
+    unless entity
+        return
+
+    unless entity\IsValid! and entity\GetMoveType! ~= MOVETYPE_NONE
+        @[ AddonName ] = nil
+        return
+
+    velocity = entity\GetVelocity!
+    unless @Alive! and not mv\KeyDown( IN_JUMP ) and @GetMoveType! == MOVETYPE_WALK
+        mv\SetVelocity( velocity )
+        @[ AddonName ] = nil
+        return
+
+    mins, maxs = @GetCollisionBounds!
+    mins[ 3 ] = maxs[ 3 ] / 2
+
+    filter = entity[ AddonName ]
+    unless filter
+        filter = { @, entity }
+        entity[ AddonName ] = filter
+
+    halfTickInterval = engine_TickInterval! * 0.5
+    velocity = velocity * halfTickInterval
+
+    start = entity\LocalToWorld( entity\OBBCenter! )
+    if util_TraceHull( { :start, endpos: start - velocity, :filter, :mins, :maxs } ).Hit then
+        @[ AddonName ] = nil
+        return
+
+    mv\SetOrigin( start )
+    mv\SetVelocity( velocity - math_max( 1, @GetGravity! ) * physenv_GetGravity! * halfTickInterval )
