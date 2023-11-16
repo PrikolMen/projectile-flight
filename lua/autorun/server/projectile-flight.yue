@@ -82,7 +82,14 @@ hook.Add "Move", AddonName, ( mv ) =>
 
     filter = entity[ AddonName ]
     unless filter
-        filter = { @, entity }
+        className = entity\GetClass!
+        filter = ( traceEntity ) ->
+            switch traceEntity\GetClass!
+                when "player"
+                    return traceEntity ~= @
+                when className
+                    return traceEntity\GetOwner! ~= @
+            return true
         entity[ AddonName ] = filter
 
     halfTickInterval = engine_TickInterval! * 0.5
