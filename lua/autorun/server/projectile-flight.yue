@@ -1,11 +1,11 @@
-engine_TickInterval = engine.TickInterval
-physenv_GetGravity = physenv.GetGravity
-util_TraceHull = util.TraceHull
-timer_Simple = timer.Simple
-math_max = math.max
+:TickInterval = engine
+:GetGravity = physenv
+:TraceHull = util
+:Simple = timer
+:max = math
 
-AddonName = "Projectile Flight"
-AllowedClasses = {
+addonName = "Projectile Flight"
+allowedClasses = {
     npc_grenade_bugbait: true
     prop_combine_ball: false
     npc_grenade_frag: false
@@ -16,34 +16,37 @@ AllowedClasses = {
 
 do
 
-    fileName = string.gsub( string.lower( AddonName ), "[%p%s%c]+", "_" ) .. ".json"
+    fileName = string.gsub( string.lower( addonName ), "[%p%s%c]+", "_" ) .. ".json"
     if file.Exists( fileName, "DATA" )
         json = file.Read( fileName, "DATA" )
         if isstring( json )
             tbl = util.JSONToTable( json )
             if istable( tbl )
-                table.Merge( AllowedClasses, tbl )
+                table.Merge( allowedClasses, tbl )
+
     else
-        file.Write( fileName, util.TableToJSON( AllowedClasses, true ) )
+
+        file.Write( fileName, util.TableToJSON( allowedClasses, true ) )
 
 do
 
-    Flags = bit.bor( FCVAR_ARCHIVE, FCVAR_NOTIFY )
-    for className, default in pairs( AllowedClasses )
-        ConVar = CreateConVar( "mp_allow_flight_on_" .. className, default and "1" or "0", Flags, "Allows players to fly on '" .. className .. "'.", 0, 1 )
-        AllowedClasses[ className ] = ConVar\GetBool!
+    flags = bit.bor( FCVAR_ARCHIVE, FCVAR_NOTIFY )
+    for className, default in pairs( allowedClasses )
+        ConVar = CreateConVar( "mp_allow_flight_on_" .. className, default and "1" or "0", flags, "Allows players to fly on '" .. className .. "'.", 0, 1 )
+        allowedClasses[ className ] = ConVar\GetBool!
 
         cvars.AddChangeCallback( ConVar\GetName!, ( _, __, value ) ->
-            AllowedClasses[ className ] = tobool( value )
-        AddonName )
+            allowedClasses[ className ] = tobool( value )
+
+        addonName )
 
 MOVETYPE_WALK = MOVETYPE_WALK
 
-hook.Add( "OnEntityCreated", AddonName, =>
-    unless AllowedClasses[ @GetClass! ]
+hook.Add "OnEntityCreated", addonName, =>
+    unless allowedClasses[ @GetClass! ]
         return
 
-    timer_Simple 0, ->
+    Simple 0, ->
         unless @IsValid!
             return
 
@@ -57,30 +60,33 @@ hook.Add( "OnEntityCreated", AddonName, =>
         elseif not owner\KeyDown( IN_WALK )
             return
 
-        owner[ AddonName ] = @
-)
+        owner[ addonName ] = @
 
 MOVETYPE_NONE = MOVETYPE_NONE
 
-hook.Add "Move", AddonName, ( mv ) =>
-    entity = @[ AddonName ]
+traceResult = {}
+trace = { output: traceResult }
+halfTickInterval = 0
+
+hook.Add "Move", addonName, ( mv ) =>
+    entity = @[ addonName ]
     unless entity
         return
 
     unless entity\IsValid! and entity\GetMoveType! ~= MOVETYPE_NONE
-        @[ AddonName ] = nil
+        @[ addonName ] = nil
         return
 
     velocity = entity\GetVelocity!
     unless @Alive! and not mv\KeyDown( IN_JUMP ) and @GetMoveType! == MOVETYPE_WALK
         mv\SetVelocity( velocity )
-        @[ AddonName ] = nil
+        @[ addonName ] = nil
         return
 
     mins, maxs = @GetCollisionBounds!
     mins[ 3 ] = maxs[ 3 ] / 2
 
-    filter = entity[ AddonName ]
+    filter = entity[ addonName ]
     unless filter
         className = entity\GetClass!
         filter = ( traceEntity ) ->
@@ -89,16 +95,23 @@ hook.Add "Move", AddonName, ( mv ) =>
                     return traceEntity ~= @
                 when className
                     return traceEntity\GetOwner! ~= @
-            return true
-        entity[ AddonName ] = filter
 
-    halfTickInterval = engine_TickInterval! * 0.5
+            return true
+
+        entity[ addonName ] = filter
+
+    halfTickInterval = TickInterval! * 0.5
     velocity = velocity * halfTickInterval
 
-    start = entity\WorldSpaceCenter!
-    if util_TraceHull( { :start, endpos: start - velocity, :filter, :mins, :maxs } ).Hit then
-        @[ AddonName ] = nil
+    trace.start = entity\WorldSpaceCenter!
+    trace.endpos = trace.start - velocity
+    trace.mins, trace.maxs = mins, maxs
+    trace.filter = filter
+    TraceHull( trace )
+
+    if traceResult.Hit then
+        @[ addonName ] = nil
         return
 
-    mv\SetOrigin( start )
-    mv\SetVelocity( velocity - math_max( 1, @GetGravity! ) * physenv_GetGravity! * halfTickInterval )
+    mv\SetOrigin( trace.start )
+    mv\SetVelocity( velocity - max( 1, @GetGravity! ) * GetGravity! * halfTickInterval )
